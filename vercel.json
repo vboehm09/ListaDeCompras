@@ -1,15 +1,6 @@
 {
-  "version": 2,
-  "name": "listai",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
+  "cleanUrls": true,
+  "trailingSlash": false,
   "routes": [
     {
       "handle": "filesystem"
