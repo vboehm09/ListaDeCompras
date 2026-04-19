@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "6f5ef7d4-a1da-4929-bb02-bc15c78870a4"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.boehm.listai",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}
