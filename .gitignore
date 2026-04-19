@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# expo folders
+.expo/
+dist/
+web-build/
+
+# native build artifacts
+ios/
+android/
+
+# local env files
+.env*.local
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# system files
+.DS_Store
+*.swp
