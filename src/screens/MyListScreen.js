@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { View, Text, SectionList, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import useStore from '../store/useStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
