@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { View, Text, SectionList, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { View, Text, SectionList, TouchableOpacity, StyleSheet, Image, Alert, Linking, Share } from 'react-native';
 import useStore from '../store/useStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -37,6 +37,37 @@ export default function MyListScreen() {
         }
       ]
     );
+  };
+
+  const formatSharedList = () => {
+    const lines = ['Lista de compras', ''];
+
+    sections.forEach((section) => {
+      lines.push(section.title.toUpperCase());
+      section.data.forEach((item) => {
+        lines.push(`- ${item.gotIt ? '[x]' : '[ ]'} ${item.name}`);
+      });
+      lines.push('');
+    });
+
+    lines.push('Lista compartilhada em modo de leitura.');
+    return lines.join('\n');
+  };
+
+  const handleShareList = async () => {
+    if (myList.length === 0) {
+      Alert.alert('Atenção', 'Sua lista está vazia para compartilhar.');
+      return;
+    }
+
+    const message = formatSharedList();
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+
+    try {
+      await Linking.openURL(whatsappUrl);
+    } catch (error) {
+      await Share.share({ message });
+    }
   };
 
   // Agrupa os itens por categoria para o SectionList
@@ -116,6 +147,11 @@ export default function MyListScreen() {
 
       {/* Botões de ação */}
       <View style={styles.headerButtons}>
+        <TouchableOpacity style={[styles.actionButton, styles.shareButton]} onPress={handleShareList}>
+          <MaterialCommunityIcons name="whatsapp" size={18} color="#FFF" />
+          <Text style={styles.actionButtonText}>Compartilhar no WhatsApp</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.actionButton} onPress={handleFinishPurchase}>
           <MaterialCommunityIcons name="check-bold" size={18} color="#FFF" />
           <Text style={styles.actionButtonText}>Finalizar Compra</Text>
@@ -169,16 +205,24 @@ const styles = StyleSheet.create({
   },
   headerButtons: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     padding: 12,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexGrow: 1,
+    flexBasis: '48%',
     backgroundColor: '#1B5E20',
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 8,
+    marginBottom: 8,
+  },
+  shareButton: {
+    flexBasis: '100%',
+    backgroundColor: '#128C7E',
   },
   dangerButton: {
     backgroundColor: '#D32F2F',
