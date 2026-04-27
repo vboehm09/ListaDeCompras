@@ -44,6 +44,7 @@ export default function App() {
             headerStyle: {
               backgroundColor: '#FFF',
             },
+            headerTitleAlign: 'center',
             headerTitleStyle: {
               fontWeight: 'bold',
               color: '#1B5E20',
