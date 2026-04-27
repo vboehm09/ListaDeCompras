@@ -1,5 +1,15 @@
 import React, { useMemo } from 'react';
-import { View, Text, SectionList, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { 
+  View, 
+  Text, 
+  SectionList, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Image, 
+  Alert,
+  Linking,
+  Share 
+} from 'react-native';
 import useStore from '../store/useStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -10,6 +20,7 @@ export default function MyListScreen() {
 
   const handleFinishPurchase = () => {
     const pegoCount = myList.filter(p => p.gotIt).length;
+    
     if (pegoCount === 0) {
       Alert.alert("Atenção", "Você não marcou nenhum item como pego.");
       return;
@@ -66,7 +77,11 @@ export default function MyListScreen() {
     try {
       await Linking.openURL(whatsappUrl);
     } catch (error) {
-      await Share.share({ message });
+      try {
+        await Share.share({ message });
+      } catch (shareError) {
+        Alert.alert("Erro", "Não foi possível compartilhar a lista.");
+      }
     }
   };
 
