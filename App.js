@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Platform } from 'react-native'; // <-- Adicione esta importação
 
 // Importando as Telas
 import ProductsScreen from './src/screens/ProductsScreen';
@@ -37,9 +38,11 @@ export default function App() {
             tabBarActiveTintColor: '#1B5E20',
             tabBarInactiveTintColor: '#888',
             tabBarStyle: {
-              paddingBottom: 5,
               paddingTop: 5,
-              height: 60,
+              // Usamos paddingBottom dinâmico dependendo do sistema para evitar 
+              // que os ícones fiquem colados na borda no Android
+              paddingBottom: Platform.OS === 'android' ? 5 : 0, 
+              minHeight: 60, // <-- Substitua 'height' por 'minHeight'
             },
             headerStyle: {
               backgroundColor: '#FFF',

@@ -61,7 +61,7 @@ export default function MyListScreen() {
     }
 
     const message = formatSharedList();
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
 
     try {
       await Linking.openURL(whatsappUrl);
