@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { POPULAR_PRODUCTS } from '../data/mockData';
 import useStore from '../store/useStore';

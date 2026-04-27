@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, SectionList, TouchableOpacity, StyleSheet, TextInput, Image } from 'react-native';
 import { PRODUCTS_DATA } from '../data/mockData';
 import useStore from '../store/useStore';

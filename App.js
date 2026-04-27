@@ -1,4 +1,3 @@
-import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -45,6 +44,7 @@ export default function App() {
             headerStyle: {
               backgroundColor: '#FFF',
             },
+            headerTitleAlign: 'center',
             headerTitleStyle: {
               fontWeight: 'bold',
               color: '#1B5E20',
