@@ -3,6 +3,10 @@
   "trailingSlash": false,
   "routes": [
     {
+      "src": "/share/(.*)",
+      "dest": "/share.html"
+    },
+    {
       "handle": "filesystem"
     },
     {

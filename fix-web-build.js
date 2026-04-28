@@ -11,3 +11,13 @@ if (fs.existsSync(indexPath)) {
 } else {
   console.log('❌ Erro: index.html não encontrado em dist/');
 }
+
+// Copia o share.html para dentro do dist
+const shareSrc = path.join(__dirname, 'share.html');
+const shareDest = path.join(__dirname, 'dist', 'share.html');
+if (fs.existsSync(shareSrc)) {
+  fs.copyFileSync(shareSrc, shareDest);
+  console.log('✅ Sucesso: share.html copiado para dist/');
+} else {
+  console.log('❌ Erro: share.html não encontrado na raiz do projeto');
+}
