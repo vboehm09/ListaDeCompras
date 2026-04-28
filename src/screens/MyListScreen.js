@@ -1,17 +1,7 @@
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../services/firebaseConfig'; // Confira se este é o caminho certo para o arquivo que criamos
 import { useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  SectionList, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Image, 
-  Alert,
-  Linking,
-  Share 
-} from 'react-native';
+import { View, Text, SectionList, TouchableOpacity, StyleSheet, Image, Alert, Linking, Share } from 'react-native';
 import useStore from '../store/useStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -93,7 +83,7 @@ export default function MyListScreen() {
       const idDaLista = docRef.id;
 
       // 3. Monta o link da Vercel (ATENÇÃO: Troque pelo seu link real)
-      const linkFinal = `https://https://listai-j98khjp5m-boehm.vercel.app/.vercel.app/share/${idDaLista}`;
+      const linkFinal = `https://listai-j98khjp5m-boehm.vercel.app/share/${idDaLista}`;
       const mensagem = `Confira minha lista de compras: ${linkFinal}`;
 
       // 4. Tenta abrir o WhatsApp

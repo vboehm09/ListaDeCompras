@@ -20,7 +20,7 @@ const Stack = createStackNavigator(); // Criando o navegador de pilha
 // Configuração para o link da Vercel funcionar
 const linking = {
   // TROQUE 'seu-projeto.vercel.app' pelo seu link real da Vercel
-  prefixes: ['https://seu-projeto.vercel.app', 'listai://'], 
+  prefixes: ['https://listai-j98khjp5m-boehm.app', 'listai://'], 
   config: {
     screens: {
       SharedList: 'share/:listId',
