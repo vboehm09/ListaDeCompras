@@ -142,10 +142,13 @@ export default function MyListScreen() {
           <Text style={styles.actionButtonText}>Compartilhar no WhatsApp</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton} onPress={handleFinishPurchase}>
-          <MaterialCommunityIcons name="check-bold" size={18} color="#FFF" />
-          <Text style={styles.actionButtonText}>Finalizar Compra</Text>
-        </TouchableOpacity>
+        <TouchableOpacity 
+  style={styles.actionButton} 
+  onPress={() => Alert.alert("Teste", `Itens marcados: ${completedCount}`)}
+>
+  <MaterialCommunityIcons name="check-bold" size={18} color="#FFF" />
+  <Text style={styles.actionButtonText}>Finalizar Compra</Text>
+</TouchableOpacity>
 
         <TouchableOpacity style={[styles.actionButton, styles.dangerButton]} onPress={clearAll}>
           <MaterialCommunityIcons name="trash-can-outline" size={18} color="#FFF" />
