@@ -1,4 +1,6 @@
-import React, { useMemo } from 'react';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../services/firebaseConfig'; // Confira se este é o caminho certo para o arquivo que criamos
+import { useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -71,17 +73,41 @@ export default function MyListScreen() {
       return;
     }
 
-    const message = formatSharedList();
-    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
-
     try {
-      await Linking.openURL(whatsappUrl);
-    } catch (error) {
+      // Exibe um alerta simples para o usuário saber que está carregando
+      Alert.alert("Gerando link...", "Salvando sua lista na nuvem.");
+      
+      // 1. Prepara os dados para o Firebase
+      const listaDados = {
+        itens: myList.map(item => ({
+          name: item.name,
+          gotIt: item.gotIt,
+          category: item.category || 'Outros',
+          image: item.image || ''
+        })),
+        criadoEm: new Date().toISOString()
+      };
+
+      // 2. Salva no Firebase (na coleção "listas")
+      const docRef = await addDoc(collection(db, "listas"), listaDados);
+      const idDaLista = docRef.id;
+
+      // 3. Monta o link da Vercel (ATENÇÃO: Troque pelo seu link real)
+      const linkFinal = `https://https://listai-j98khjp5m-boehm.vercel.app/.vercel.app/share/${idDaLista}`;
+      const mensagem = `Confira minha lista de compras: ${linkFinal}`;
+
+      // 4. Tenta abrir o WhatsApp
+      const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(mensagem)}`;
       try {
-        await Share.share({ message });
-      } catch (shareError) {
-        Alert.alert("Erro", "Não foi possível compartilhar a lista.");
+        await Linking.openURL(whatsappUrl);
+      } catch (err) {
+        // Se a pessoa não tiver WhatsApp, abre o menu de compartilhar padrão do celular
+        await Share.share({ message: mensagem });
       }
+
+    } catch (error) {
+      console.error("Erro ao gerar link:", error);
+      Alert.alert("Erro", "Não foi possível gerar o link.");
     }
   };
 
