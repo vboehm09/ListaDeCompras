@@ -58,48 +58,46 @@ export default function MyListScreen() {
   };
 
   const handleShareList = async () => {
-    if (myList.length === 0) {
-      Alert.alert('Atenção', 'Sua lista está vazia para compartilhar.');
-      return;
+  if (myList.length === 0) {
+    Alert.alert('Atenção', 'Sua lista está vazia para compartilhar.');
+    return;
+  }
+
+  try {
+    console.log("Iniciando compartilhamento..."); // debug
+
+    const listaDados = {
+      itens: myList.map(item => ({
+        name: item.name,
+        gotIt: item.gotIt,
+        category: item.category || 'Outros',
+        image: item.image || ''
+      })),
+      criadoEm: new Date().toISOString()
+    };
+
+    console.log("Salvando no Firebase...");
+    const docRef = await addDoc(collection(db, "listas"), listaDados);
+    console.log("Salvo! ID:", docRef.id);
+
+    const linkFinal = `https://listai-j98khjp5m-boehm.vercel.app/share/${docRef.id}`;
+    const mensagem = `Confira minha lista de compras: ${linkFinal}`;
+
+    // Tenta WhatsApp, cai no Share nativo se não tiver
+    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(mensagem)}`;
+    const podeAbrir = await Linking.canOpenURL(whatsappUrl);
+
+    if (podeAbrir) {
+      await Linking.openURL(whatsappUrl);
+    } else {
+      await Share.share({ message: mensagem });
     }
 
-    try {
-      // Exibe um alerta simples para o usuário saber que está carregando
-      Alert.alert("Gerando link...", "Salvando sua lista na nuvem.");
-      
-      // 1. Prepara os dados para o Firebase
-      const listaDados = {
-        itens: myList.map(item => ({
-          name: item.name,
-          gotIt: item.gotIt,
-          category: item.category || 'Outros',
-          image: item.image || ''
-        })),
-        criadoEm: new Date().toISOString()
-      };
-
-      // 2. Salva no Firebase (na coleção "listas")
-      const docRef = await addDoc(collection(db, "listas"), listaDados);
-      const idDaLista = docRef.id;
-
-      // 3. Monta o link da Vercel (ATENÇÃO: Troque pelo seu link real)
-      const linkFinal = `https://listai-j98khjp5m-boehm.vercel.app/share/${idDaLista}`;
-      const mensagem = `Confira minha lista de compras: ${linkFinal}`;
-
-      // 4. Tenta abrir o WhatsApp
-      const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(mensagem)}`;
-      try {
-        await Linking.openURL(whatsappUrl);
-      } catch (err) {
-        // Se a pessoa não tiver WhatsApp, abre o menu de compartilhar padrão do celular
-        await Share.share({ message: mensagem });
-      }
-
-    } catch (error) {
-      console.error("Erro ao gerar link:", error);
-      Alert.alert("Erro", "Não foi possível gerar o link.");
-    }
-  };
+  } catch (error) {
+    console.error("Erro detalhado:", error); // olha o log aqui
+    Alert.alert("Erro", `Não foi possível gerar o link.\n\nDetalhe: ${error.message}`);
+  }
+};
 
   // Agrupa os itens por categoria para o SectionList
   const sections = useMemo(() => {
