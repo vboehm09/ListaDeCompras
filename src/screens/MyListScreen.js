@@ -1,7 +1,5 @@
-import { collection, addDoc } from 'firebase/firestore';
-import { db } from '../services/firebaseConfig'; // Confira se este é o caminho certo para o arquivo que criamos
 import { useMemo } from 'react';
-import { View, Text, SectionList, TouchableOpacity, StyleSheet, Image, Alert, Linking, Share } from 'react-native';
+import { View, Text, SectionList, TouchableOpacity, StyleSheet, Image, Alert, Share } from 'react-native';
 import useStore from '../store/useStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -9,95 +7,6 @@ export default function MyListScreen() {
   const { myList, toggleGotIt, finishPurchase, clearCompleted, clearAll } = useStore();
 
   const completedCount = myList.filter(p => p.gotIt).length;
-
-  const handleFinishPurchase = () => {
-    const pegoCount = myList.filter(p => p.gotIt).length;
-    
-    if (pegoCount === 0) {
-      Alert.alert("Atenção", "Você não marcou nenhum item como pego.");
-      return;
-    }
-
-    Alert.alert(
-      "Finalizar Compra",
-      `O que deseja fazer com estes ${pegoCount} itens?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Apenas Limpar", 
-          onPress: () => {
-            clearCompleted();
-            Alert.alert("Sucesso", "Lista limpa (não salva no histórico).");
-          },
-          style: "destructive"
-        },
-        { 
-          text: "Salvar e Finalizar", 
-          onPress: () => {
-            finishPurchase();
-            Alert.alert("Sucesso", "Compra salva no histórico!");
-          }
-        }
-      ]
-    );
-  };
-
-  const formatSharedList = () => {
-    const lines = ['Lista de compras', ''];
-
-    sections.forEach((section) => {
-      lines.push(section.title.toUpperCase());
-      section.data.forEach((item) => {
-        lines.push(`- ${item.gotIt ? '[x]' : '[ ]'} ${item.name}`);
-      });
-      lines.push('');
-    });
-
-    lines.push('Lista compartilhada em modo de leitura.');
-    return lines.join('\n');
-  };
-
-  const handleShareList = async () => {
-  if (myList.length === 0) {
-    Alert.alert('Atenção', 'Sua lista está vazia para compartilhar.');
-    return;
-  }
-
-  try {
-    console.log("Iniciando compartilhamento..."); // debug
-
-    const listaDados = {
-      itens: myList.map(item => ({
-        name: item.name,
-        gotIt: item.gotIt,
-        category: item.category || 'Outros',
-        image: item.image || ''
-      })),
-      criadoEm: new Date().toISOString()
-    };
-
-    console.log("Salvando no Firebase...");
-    const docRef = await addDoc(collection(db, "listas"), listaDados);
-    console.log("Salvo! ID:", docRef.id);
-
-    const linkFinal = `https://listai-j98khjp5m-boehm.vercel.app/share/${docRef.id}`;
-    const mensagem = `Confira minha lista de compras: ${linkFinal}`;
-
-    // Tenta WhatsApp, cai no Share nativo se não tiver
-    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(mensagem)}`;
-    const podeAbrir = await Linking.canOpenURL(whatsappUrl);
-
-    if (podeAbrir) {
-      await Linking.openURL(whatsappUrl);
-    } else {
-      await Share.share({ message: mensagem });
-    }
-
-  } catch (error) {
-    console.error("Erro detalhado:", error); // olha o log aqui
-    Alert.alert("Erro", `Não foi possível gerar o link.\n\nDetalhe: ${error.message}`);
-  }
-};
 
   // Agrupa os itens por categoria para o SectionList
   const sections = useMemo(() => {
@@ -111,31 +20,83 @@ export default function MyListScreen() {
     }, {});
 
     return Object.keys(groups)
-      .sort() // Ordena as categorias alfabeticamente
+      .sort()
       .map(category => ({
         title: category,
         data: groups[category],
       }));
   }, [myList]);
 
+  const handleFinishPurchase = () => {
+    const pegoCount = myList.filter(p => p.gotIt).length;
+
+    if (pegoCount === 0) {
+      Alert.alert("Atenção", "Você não marcou nenhum item como pego.");
+      return;
+    }
+
+    Alert.alert(
+      "Finalizar Compra",
+      `O que deseja fazer com estes ${pegoCount} itens?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Apenas Limpar",
+          onPress: () => {
+            clearCompleted();
+            Alert.alert("Sucesso", "Lista limpa (não salva no histórico).");
+          },
+          style: "destructive"
+        },
+        {
+          text: "Salvar e Finalizar",
+          onPress: () => {
+            finishPurchase();
+            Alert.alert("Sucesso", "Compra salva no histórico!");
+          }
+        }
+      ]
+    );
+  };
+
+  const handleShareList = () => {
+    if (myList.length === 0) {
+      Alert.alert('Atenção', 'Sua lista está vazia para compartilhar.');
+      return;
+    }
+
+    const lines = ['Lista de compras', ''];
+
+    sections.forEach((section) => {
+      lines.push(section.title.toUpperCase());
+      section.data.forEach((item) => {
+        lines.push(`- ${item.gotIt ? '[x]' : '[ ]'} ${item.name}`);
+      });
+      lines.push('');
+    });
+
+    lines.push('Lista compartilhada em modo de leitura.');
+    const mensagem = lines.join('\n');
+
+    Share.share({ message: mensagem });
+  };
+
   const renderItem = ({ item }) => {
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.itemContainer, item.gotIt && styles.itemContainerGotIt]}
         onPress={() => toggleGotIt(item.id)}
         activeOpacity={0.7}
       >
-        <MaterialCommunityIcons 
-          name={item.gotIt ? "checkbox-marked" : "checkbox-blank-outline"} 
-          size={24} 
-          color={item.gotIt ? "#2E7D32" : "#757575"} 
+        <MaterialCommunityIcons
+          name={item.gotIt ? "checkbox-marked" : "checkbox-blank-outline"}
+          size={24}
+          color={item.gotIt ? "#2E7D32" : "#757575"}
         />
-
         <Image
           source={{ uri: item.image }}
           style={styles.productImage}
         />
-
         <View style={styles.itemTextContainer}>
           <Text style={[styles.itemName, item.gotIt && styles.itemNameGotIt]}>
             {item.name}
@@ -321,11 +282,6 @@ const styles = StyleSheet.create({
   itemNameGotIt: {
     textDecorationLine: 'line-through',
     color: '#757575',
-  },
-  itemCategory: {
-    fontSize: 11,
-    color: '#888',
-    marginTop: 2,
   },
   emptyContainer: {
     flex: 1,
