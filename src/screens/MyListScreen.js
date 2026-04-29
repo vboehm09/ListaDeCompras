@@ -1,14 +1,38 @@
 import { useMemo } from 'react';
-import { View, Text, SectionList, TouchableOpacity, StyleSheet, Image, Alert, Share } from 'react-native';
+import { View, Text, SectionList, TouchableOpacity, StyleSheet, Image, Alert, Share, Platform } from 'react-native';
 import useStore from '../store/useStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+// Função que funciona tanto na web quanto no celular
+const showAlert = (title, message, buttons) => {
+  if (Platform.OS === 'web') {
+    // Na web, simula o fluxo dos botões com confirm/alert do navegador
+    const buttonLabels = buttons.filter(b => b.text !== 'Cancelar').map(b => b.text);
+    
+    if (buttonLabels.length === 1) {
+      window.alert(`${title}\n\n${message}`);
+      buttons[0].onPress?.();
+    } else {
+      // Monta uma mensagem com as opções
+      const opcoes = buttonLabels.map((label, i) => `${i + 1}. ${label}`).join('\n');
+      const escolha = window.prompt(`${title}\n\n${message}\n\nDigite o número da opção:\n${opcoes}`);
+      
+      if (escolha === '1') {
+        buttons.find(b => b.text === buttonLabels[0])?.onPress?.();
+      } else if (escolha === '2') {
+        buttons.find(b => b.text === buttonLabels[1])?.onPress?.();
+      }
+    }
+  } else {
+    Alert.alert(title, message, buttons);
+  }
+};
 
 export default function MyListScreen() {
   const { myList, toggleGotIt, finishPurchase, clearCompleted, clearAll } = useStore();
 
   const completedCount = myList.filter(p => p.gotIt).length;
 
-  // Agrupa os itens por categoria para o SectionList
   const sections = useMemo(() => {
     const groups = myList.reduce((acc, item) => {
       const category = item.category || 'Outros';
@@ -31,11 +55,13 @@ export default function MyListScreen() {
     const pegoCount = myList.filter(p => p.gotIt).length;
 
     if (pegoCount === 0) {
-      Alert.alert("Atenção", "Você não marcou nenhum item como pego.");
+      showAlert("Atenção", "Você não marcou nenhum item como pego.", [
+        { text: "OK" }
+      ]);
       return;
     }
 
-    Alert.alert(
+    showAlert(
       "Finalizar Compra",
       `O que deseja fazer com estes ${pegoCount} itens?`,
       [
@@ -44,7 +70,7 @@ export default function MyListScreen() {
           text: "Apenas Limpar",
           onPress: () => {
             clearCompleted();
-            Alert.alert("Sucesso", "Lista limpa (não salva no histórico).");
+            showAlert("Sucesso", "Lista limpa (não salva no histórico).", [{ text: "OK" }]);
           },
           style: "destructive"
         },
@@ -52,7 +78,7 @@ export default function MyListScreen() {
           text: "Salvar e Finalizar",
           onPress: () => {
             finishPurchase();
-            Alert.alert("Sucesso", "Compra salva no histórico!");
+            showAlert("Sucesso", "Compra salva no histórico!", [{ text: "OK" }]);
           }
         }
       ]
@@ -61,7 +87,7 @@ export default function MyListScreen() {
 
   const handleShareList = () => {
     if (myList.length === 0) {
-      Alert.alert('Atenção', 'Sua lista está vazia para compartilhar.');
+      showAlert('Atenção', 'Sua lista está vazia para compartilhar.', [{ text: "OK" }]);
       return;
     }
 
@@ -78,7 +104,32 @@ export default function MyListScreen() {
     lines.push('Lista compartilhada em modo de leitura.');
     const mensagem = lines.join('\n');
 
-    Share.share({ message: mensagem });
+    if (Platform.OS === 'web') {
+      navigator.clipboard?.writeText(mensagem).then(() => {
+        window.alert("Lista copiada para a área de transferência!");
+      }).catch(() => {
+        window.alert(mensagem);
+      });
+    } else {
+      Share.share({ message: mensagem });
+    }
+  };
+
+  const handleClearAll = () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm("Tem certeza que deseja esvaziar toda a lista?")) {
+        clearAll();
+      }
+    } else {
+      Alert.alert(
+        "Esvaziar Lista",
+        "Tem certeza que deseja remover todos os itens?",
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Esvaziar", onPress: clearAll, style: "destructive" }
+        ]
+      );
+    }
   };
 
   const renderItem = ({ item }) => {
@@ -142,16 +193,12 @@ export default function MyListScreen() {
           <Text style={styles.actionButtonText}>Compartilhar no WhatsApp</Text>
         </TouchableOpacity>
 
-        {/* BOTÃO DE TESTE */}
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => Alert.alert("Teste", `Itens marcados: ${completedCount}`)}
-        >
+        <TouchableOpacity style={styles.actionButton} onPress={handleFinishPurchase}>
           <MaterialCommunityIcons name="check-bold" size={18} color="#FFF" />
           <Text style={styles.actionButtonText}>Finalizar Compra</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.actionButton, styles.dangerButton]} onPress={clearAll}>
+        <TouchableOpacity style={[styles.actionButton, styles.dangerButton]} onPress={handleClearAll}>
           <MaterialCommunityIcons name="trash-can-outline" size={18} color="#FFF" />
           <Text style={styles.actionButtonText}>Esvaziar</Text>
         </TouchableOpacity>
