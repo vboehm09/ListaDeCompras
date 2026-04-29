@@ -1,98 +1,135 @@
-import { useMemo } from 'react';
-import { View, Text, SectionList, TouchableOpacity, StyleSheet, Image, Alert, Share, Platform } from 'react-native';
+import { useMemo, useState } from 'react';
+import { View, Text, SectionList, TouchableOpacity, StyleSheet, Image, Alert, Share, Platform, Modal } from 'react-native';
 import useStore from '../store/useStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-// Função que funciona tanto na web quanto no celular
-const showAlert = (title, message, buttons) => {
-  if (Platform.OS === 'web') {
-    // Na web, simula o fluxo dos botões com confirm/alert do navegador
-    const buttonLabels = buttons.filter(b => b.text !== 'Cancelar').map(b => b.text);
-    
-    if (buttonLabels.length === 1) {
-      window.alert(`${title}\n\n${message}`);
-      buttons[0].onPress?.();
-    } else {
-      // Monta uma mensagem com as opções
-      const opcoes = buttonLabels.map((label, i) => `${i + 1}. ${label}`).join('\n');
-      const escolha = window.prompt(`${title}\n\n${message}\n\nDigite o número da opção:\n${opcoes}`);
-      
-      if (escolha === '1') {
-        buttons.find(b => b.text === buttonLabels[0])?.onPress?.();
-      } else if (escolha === '2') {
-        buttons.find(b => b.text === buttonLabels[1])?.onPress?.();
-      }
-    }
-  } else {
-    Alert.alert(title, message, buttons);
-  }
-};
+// Modal customizado que funciona na web e no celular
+function ConfirmModal({ visible, title, message, buttons, onClose }) {
+  if (!visible) return null;
+
+  return (
+    <Modal
+      transparent
+      animationType="fade"
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={modalStyles.overlay}>
+        <View style={modalStyles.box}>
+          <Text style={modalStyles.title}>{title}</Text>
+          <Text style={modalStyles.message}>{message}</Text>
+          <View style={modalStyles.buttonsContainer}>
+            {buttons.map((btn, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  modalStyles.button,
+                  btn.style === 'cancel' && modalStyles.cancelButton,
+                  btn.style === 'destructive' && modalStyles.destructiveButton,
+                  btn.style === 'primary' && modalStyles.primaryButton,
+                ]}
+                onPress={() => {
+                  onClose();
+                  btn.onPress?.();
+                }}
+              >
+                <Text style={[
+                  modalStyles.buttonText,
+                  btn.style === 'cancel' && modalStyles.cancelButtonText,
+                ]}>
+                  {btn.text}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 export default function MyListScreen() {
   const { myList, toggleGotIt, finishPurchase, clearCompleted, clearAll } = useStore();
 
+  const [modal, setModal] = useState({ visible: false, title: '', message: '', buttons: [] });
+
   const completedCount = myList.filter(p => p.gotIt).length;
+
+  const showModal = (title, message, buttons) => {
+    setModal({ visible: true, title, message, buttons });
+  };
+
+  const closeModal = () => {
+    setModal(m => ({ ...m, visible: false }));
+  };
 
   const sections = useMemo(() => {
     const groups = myList.reduce((acc, item) => {
       const category = item.category || 'Outros';
-      if (!acc[category]) {
-        acc[category] = [];
-      }
+      if (!acc[category]) acc[category] = [];
       acc[category].push(item);
       return acc;
     }, {});
 
-    return Object.keys(groups)
-      .sort()
-      .map(category => ({
-        title: category,
-        data: groups[category],
-      }));
+    return Object.keys(groups).sort().map(category => ({
+      title: category,
+      data: groups[category],
+    }));
   }, [myList]);
 
   const handleFinishPurchase = () => {
     const pegoCount = myList.filter(p => p.gotIt).length;
 
     if (pegoCount === 0) {
-      showAlert("Atenção", "Você não marcou nenhum item como pego.", [
-        { text: "OK" }
+      showModal("Atenção", "Você não marcou nenhum item como pego.", [
+        { text: "OK", style: "primary" }
       ]);
       return;
     }
 
-    showAlert(
+    showModal(
       "Finalizar Compra",
-      `O que deseja fazer com estes ${pegoCount} itens?`,
+      `O que deseja fazer com os ${pegoCount} itens marcados?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
           text: "Apenas Limpar",
+          style: "destructive",
           onPress: () => {
             clearCompleted();
-            showAlert("Sucesso", "Lista limpa (não salva no histórico).", [{ text: "OK" }]);
-          },
-          style: "destructive"
+            showModal("Sucesso", "Lista limpa!", [{ text: "OK", style: "primary" }]);
+          }
         },
         {
           text: "Salvar e Finalizar",
+          style: "primary",
           onPress: () => {
             finishPurchase();
-            showAlert("Sucesso", "Compra salva no histórico!", [{ text: "OK" }]);
+            showModal("Sucesso", "Compra salva no histórico!", [{ text: "OK", style: "primary" }]);
           }
         }
       ]
     );
   };
 
+  const handleClearAll = () => {
+    showModal(
+      "Esvaziar Lista",
+      "Tem certeza que deseja remover todos os itens?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Esvaziar Tudo", style: "destructive", onPress: clearAll }
+      ]
+    );
+  };
+
   const handleShareList = () => {
     if (myList.length === 0) {
-      showAlert('Atenção', 'Sua lista está vazia para compartilhar.', [{ text: "OK" }]);
+      showModal('Atenção', 'Sua lista está vazia para compartilhar.', [{ text: "OK", style: "primary" }]);
       return;
     }
 
     const lines = ['Lista de compras', ''];
-
     sections.forEach((section) => {
       lines.push(section.title.toUpperCase());
       section.data.forEach((item) => {
@@ -100,62 +137,39 @@ export default function MyListScreen() {
       });
       lines.push('');
     });
-
     lines.push('Lista compartilhada em modo de leitura.');
     const mensagem = lines.join('\n');
 
     if (Platform.OS === 'web') {
       navigator.clipboard?.writeText(mensagem).then(() => {
-        window.alert("Lista copiada para a área de transferência!");
+        showModal("Compartilhar", "Lista copiada! Cole no WhatsApp ou onde quiser.", [{ text: "OK", style: "primary" }]);
       }).catch(() => {
-        window.alert(mensagem);
+        showModal("Lista de Compras", mensagem, [{ text: "OK", style: "primary" }]);
       });
     } else {
       Share.share({ message: mensagem });
     }
   };
 
-  const handleClearAll = () => {
-    if (Platform.OS === 'web') {
-      if (window.confirm("Tem certeza que deseja esvaziar toda a lista?")) {
-        clearAll();
-      }
-    } else {
-      Alert.alert(
-        "Esvaziar Lista",
-        "Tem certeza que deseja remover todos os itens?",
-        [
-          { text: "Cancelar", style: "cancel" },
-          { text: "Esvaziar", onPress: clearAll, style: "destructive" }
-        ]
-      );
-    }
-  };
-
-  const renderItem = ({ item }) => {
-    return (
-      <TouchableOpacity
-        style={[styles.itemContainer, item.gotIt && styles.itemContainerGotIt]}
-        onPress={() => toggleGotIt(item.id)}
-        activeOpacity={0.7}
-      >
-        <MaterialCommunityIcons
-          name={item.gotIt ? "checkbox-marked" : "checkbox-blank-outline"}
-          size={24}
-          color={item.gotIt ? "#2E7D32" : "#757575"}
-        />
-        <Image
-          source={{ uri: item.image }}
-          style={styles.productImage}
-        />
-        <View style={styles.itemTextContainer}>
-          <Text style={[styles.itemName, item.gotIt && styles.itemNameGotIt]}>
-            {item.name}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  const renderItem = ({ item }) => (
+    <TouchableOpacity
+      style={[styles.itemContainer, item.gotIt && styles.itemContainerGotIt]}
+      onPress={() => toggleGotIt(item.id)}
+      activeOpacity={0.7}
+    >
+      <MaterialCommunityIcons
+        name={item.gotIt ? "checkbox-marked" : "checkbox-blank-outline"}
+        size={24}
+        color={item.gotIt ? "#2E7D32" : "#757575"}
+      />
+      <Image source={{ uri: item.image }} style={styles.productImage} />
+      <View style={styles.itemTextContainer}>
+        <Text style={[styles.itemName, item.gotIt && styles.itemNameGotIt]}>
+          {item.name}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
 
   const renderSectionHeader = ({ section: { title } }) => (
     <View style={styles.sectionHeader}>
@@ -176,7 +190,14 @@ export default function MyListScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Contador */}
+      <ConfirmModal
+        visible={modal.visible}
+        title={modal.title}
+        message={modal.message}
+        buttons={modal.buttons}
+        onClose={closeModal}
+      />
+
       <View style={styles.statsContainer}>
         <Text style={styles.statsText}>
           {completedCount} de {myList.length} itens pegos
@@ -186,7 +207,6 @@ export default function MyListScreen() {
         </View>
       </View>
 
-      {/* Botões de ação */}
       <View style={styles.headerButtons}>
         <TouchableOpacity style={[styles.actionButton, styles.shareButton]} onPress={handleShareList}>
           <MaterialCommunityIcons name="whatsapp" size={18} color="#FFF" />
@@ -215,6 +235,71 @@ export default function MyListScreen() {
     </View>
   );
 }
+
+const modalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  box: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 360,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1B5E20',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  message: {
+    fontSize: 15,
+    color: '#555',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  buttonsContainer: {
+    gap: 10,
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: '#E0E0E0',
+  },
+  primaryButton: {
+    backgroundColor: '#1B5E20',
+  },
+  destructiveButton: {
+    backgroundColor: '#D32F2F',
+  },
+  cancelButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#CCC',
+  },
+  buttonText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  cancelButtonText: {
+    color: '#888',
+  },
+});
 
 const styles = StyleSheet.create({
   container: {
